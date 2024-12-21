@@ -113,16 +113,6 @@
 
 ---
 
-### **Visualization**
-
-- Obstacles are represented as black rectangles.
-- Goals are red points.
-- Agents are blue, with variations (e.g., smaller size for wanderers).
-- Spawn points are marked with purple diamonds.
-- Matplotlib is used to render and animate the simulation.
-
----
-
 ## **Design**
 
 ### **Group-Seeking and Obstacle Avoidance**
@@ -130,7 +120,24 @@
 #### **Parameters Changed**:
 - **interaction_radius**: 15 units
 - **personal_space**: 1.5 units
-- **goal_weight**: 0.5 (reduced to prioritize group-seeking)
+- **goal_weight**: 0.5
+
+Certainly! Below is an updated **Design Variations** section, including the additional parameters you mentioned and a clear explanation of what can change.
+
+---
+
+## **Design Variations**
+
+### **Variation 1: Group-Seeking and Obstacle Avoidance**
+
+#### **Parameters Changed**:
+- **interaction_radius**: 15 units (distance within which agents seek group alignment)
+- **personal_space**: 1.5 units (minimum distance agents maintain from one another)
+- **goal_weight**: 0.5 (reduced to prioritize group-seeking over goal-seeking)
+- **num_agents**: 50 (Total number of agents in the simulation)
+- **num_wanderers**: 20 (Number of agents with random wandering behavior)
+- **num_group_seekers**: 25 (Number of agents exhibiting group-seeking behavior)
+- **num_path_followers**: 25 (Number of agents following specific paths or goals)
 
 #### **Description**:
 In this variation, group-seeking agents dominate the simulation. Agents prioritize moving toward the center of their local group while avoiding obstacles. The reduced goal weight allows agents to adapt their paths dynamically rather than heading directly to their goal.
@@ -140,7 +147,7 @@ In this variation, group-seeking agents dominate the simulation. Agents prioriti
 - Obstacles create interesting movement patterns as groups split and re-merge.
 
 #### **Visualization**:
-![Variation 1](images/variation1.jpg)
+![Agent Simulation](images/simulation.gif)
 
 ---
 
