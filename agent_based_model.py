@@ -232,25 +232,41 @@ def add_new_agents(spawn_points, agents, num_new_agents, env_width, env_height):
 def run_simulation(environment, agents, spawn_points, steps=100, save_dir="simulation_images"):
     """
     Run the simulation for a specified number of steps, visualizing the results.
+    Saves images at each step if a save directory is specified.
     """
+    # Create the directory to save images if it doesn't exist
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(10, 8))  # Increased figure size for better visualization
+
+    # Legend handles for obstacles, agents, goals, and spawn points
+    obstacles_patch = plt.Line2D([0], [0], marker='s', color='w', markerfacecolor='black', markersize=10, label='Obstacle')
+    agents_patch = plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=10, label='Agent')
+    wanderers_patch = plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=6, label='Wanderer')  # Smaller size for wanderers
+    goals_patch = plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='red', markersize=10, label='Goal')
+    spawn_patch = plt.Line2D([0], [0], marker='D', color='w', markerfacecolor='purple', markersize=10, label='Spawn Point')
+
     for step in range(steps):
-        plt.clf()
+        plt.clf()  # Clear the figure for the next step
+
+        # Draw environment boundaries
         plt.xlim(0, environment.width)
         plt.ylim(0, environment.height)
 
-        # Draw obstacles
+        # Draw obstacles as outlined rectangles
         for obstacle in environment.obstacles:
             x_vals = [obstacle[0], obstacle[2], obstacle[2], obstacle[0], obstacle[0]]
             y_vals = [obstacle[1], obstacle[1], obstacle[3], obstacle[3], obstacle[1]]
-            plt.plot(x_vals, y_vals, color='black')
+            plt.plot(x_vals, y_vals, color='black', lw=2)  # Outline of the obstacle
 
-        # Draw goals
+        # Draw goals as red circles
         for goal in environment.goals:
-            plt.scatter(goal[0], goal[1], color='red')
+            plt.scatter(goal[0], goal[1], color='red', s=100, marker='o')  # Fixed goals in red
+
+        # Draw spawn points with purple diamonds
+        for spawn in spawn_points:
+            plt.scatter(spawn[0], spawn[1], color='purple', s=100, marker='D')  # Diamond marker for spawn points
 
         # Add new agents at spawn points every 10 steps
         if step % 10 == 0:
@@ -258,12 +274,34 @@ def run_simulation(environment, agents, spawn_points, steps=100, save_dir="simul
 
         # Update and draw agents
         for agent in agents:
+            # Find neighbors within personal space
             neighbors = [a for a in agents if a != agent and np.linalg.norm(a.position - agent.position) < agent.personal_space]
-            agent.compute_velocity(neighbors, environment)
-            agent.move()
-            plt.scatter(agent.position[0], agent.position[1], color='blue')
+            agent.compute_velocity(neighbors, environment)  # Update agent velocity based on neighbors and environment
+            agent.move()  # Move the agent to its new position
 
-        plt.pause(0.1)
+            # Visualize agents with different styles for wanderers
+            if agent.wanderer:
+                plt.scatter(agent.position[0], agent.position[1], color='blue', s=20)  # Smaller size for wanderers
+            else:
+                plt.scatter(agent.position[0], agent.position[1], color='blue', s=50)  # Larger size for regular agents
+            if agent.goal is not None:
+                plt.scatter(agent.goal[0], agent.goal[1], color='red', s=50, alpha=0.5)  # Current goal (semi-transparent red)
+
+            # Check if the agent has reached its goal
+            if agent.reached_goal():
+                agent.goal = None  # Keep the goal fixed, no removal of goal
+
+        # Add the legend after all visual elements are drawn
+        plt.legend(handles=[obstacles_patch, agents_patch, wanderers_patch, goals_patch, spawn_patch], loc='upper left', bbox_to_anchor=(1.05, 1))
+
+        # Adjust layout to make space for the legend
+        plt.subplots_adjust(right=0.8)  # Reduce the right margin to make space for the legend
+
+        # Save the current plot as an image
+        image_filename = os.path.join(save_dir, f"step_{step:03d}.png")
+        plt.savefig(image_filename, bbox_inches='tight')  # Save the image with a tight layout
+
+        plt.pause(0.1)  # Pause briefly to create an animation effect
 
     plt.show()
 
