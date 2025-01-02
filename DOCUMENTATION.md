@@ -1,6 +1,6 @@
-# Assignment 4: Agent-Based Model Documentation
+# **Assignment 4: Agent-Based Model Documentation**
 
-## Table of Contents
+## **Table of Contents**
 
 - [Pseudo-Code](#pseudo-code)
 - [Technical Explanation](#technical-explanation)
@@ -10,163 +10,188 @@
 
 ---
 
-## Pseudo-Code
+## **Pseudo-Code**
 
-*(Provide detailed pseudo-code explaining the logic of your program. Outline your classes, their methods, and how they interact to produce the final model.)*
+### **Main Simulation Loop**
 
-### Example Structure:
+1. **Initialize the Environment**:
+   - Create an `Environment` object with defined width, height, obstacles, and goals.
+   - Generate obstacles using `create_obstacles()`.
+   - Generate goals using `create_goals()` and ensure they are valid positions.
 
-1. **Main Simulation Loop**
+2. **Initialize Agents**:
+   - Create instances of the `Agent` class:
+     - Assign goals to regular agents.
+     - Assign behavior flags for `wanderer`, `group_seeker`, or `path_follower` agents.
+     - Randomly initialize agent positions within the environment.
 
-   - **Initialize Agents**:
-     - Create instances of the Agent class with initial positions and velocities.
-   - **Simulation Steps**:
-     - For each time step:
-       - **Agent Interactions**:
-         - Agents interact with other agents and the environment.
-       - **Agent Movement**:
-         - Agents update their positions based on their velocities.
-       - **Agent State Updates**:
-         - Agents update any internal states or attributes.
-       - **Data Collection**:
-         - Record agent positions or other relevant data for visualization.
-
-2. **Agent Class**
-
-   - **Attributes**:
-     - position: The agent's position in space.
-     - velocity: The agent's velocity vector.
-     - Other attributes as needed (e.g., state, neighbors).
-
-   - **Methods**:
-     - **move()**:
-       - Updates the agent's position based on its velocity and other factors.
-     - **interact(agents)**:
-       - Defines how the agent interacts with other agents.
-       - May include calculating forces, changing direction, or altering state.
-     - **update()**:
-       - Updates the agent's internal state after interactions and movement.
-
-3. **Additional Classes** (if applicable)
-
-   - **Environment**:
-     - Represents the simulation environment.
-     - May include methods for adding obstacles or boundaries.
-   - **Obstacle**:
-     - Represents obstacles in the environment that agents interact with.
+3. **Simulation Loop** (for a specified number of steps):
+   - **Update Agents**:
+     - For each agent:
+       - Compute its velocity based on:
+         - Avoidance of obstacles.
+         - Interaction with neighbors (if applicable).
+         - Goal-seeking (if a goal is assigned).
+       - Update the agent's position based on its velocity.
+       - Check if the agent has reached its goal.
+   - **Add New Agents** (every 10 steps):
+     - Spawn additional agents at predefined spawn points with new goals.
+   - **Visualize the Environment**:
+     - Plot obstacles, goals, agents, and spawn points.
+     - Save or display the current state of the simulation.
 
 ---
 
-## Technical Explanation
+### **Agent Class**
 
-*(Provide a concise explanation of your code, focusing on how you implemented OOP principles and agent-based modeling. Discuss how your approach generates the final structural patterns and the mathematical or computational principles involved.)*
+1. **Attributes**:
+   - `position`: The agent's current position in space.
+   - `velocity`: The agent's velocity vector.
+   - `goal`: The assigned target position (optional for certain behaviors).
+   - `wanderer`, `group_seeker`, `path_follower`: Flags determining the agent's behavior type.
+   - `personal_space`: Minimum distance the agent maintains from others.
 
-### Topics to Cover:
-
-- **Object-Oriented Design**
-
-  - Explain the classes you designed and why.
-  - Discuss how you applied OOP principles like encapsulation, inheritance, and polymorphism.
-  - Describe how the classes interact within the simulation.
-
-- **Agent Behaviors and Interactions**
-
-  - Describe the rules governing agent behaviors.
-  - Explain how agents interact with each other and the environment.
-  - Discuss any algorithms or decision-making processes implemented.
-
-- **Simulation Loop**
-
-  - Explain how the simulation evolves over time.
-  - Describe how time-stepping or iteration is handled.
-  - Discuss any performance considerations.
-
-- **Visualization**
-
-  - Explain how the agent data is used to generate the final models.
-  - Discuss any visualization techniques or tools used.
+2. **Methods**:
+   - `compute_velocity(neighbors, environment)`:
+     - Calculates the agent's velocity based on:
+       - Obstacle avoidance.
+       - Group-seeking or random wandering behavior (if applicable).
+       - Goal-seeking forces.
+   - `avoid_obstacles(environment)`:
+     - Adjusts the velocity to steer away from obstacles in the agent's path.
+   - `steer_around_obstacle(obstacle)`:
+     - Calculates a repulsion force to navigate smoothly around an obstacle.
+   - `move()`:
+     - Updates the agent's position based on its velocity.
+   - `reached_goal()`:
+     - Checks if the agent is within a threshold distance of its assigned goal.
 
 ---
 
-## Design Variations
+## **Technical Explanation**
 
-*(Include images and descriptions of your generated design variations. For each variation, discuss the parameters or rules changed and the impact on the resulting patterns.)*
+### **Object-Oriented Design**
 
-### Variation Examples
+- **Classes**:
+  - The simulation uses `Environment` and `Agent` classes to encapsulate core functionality.
+  - The `Environment` class handles spatial boundaries, obstacles, and goals.
+  - The `Agent` class models individual entities with distinct attributes and behaviors.
 
-1. **Variation 1: [Name/Description]**
-
-   ![Variation 1](images/variation1.jpg)
-
-   - **Parameters Changed**:
-     - interaction_radius: [Value]
-     - alignment_strength: [Value]
-   - **Description**:
-     - Describe how these changes affected agent behaviors and the final pattern.
-
-2. **Variation 2: [Name/Description]**
-
-   ![Variation 2](images/variation2.jpg)
-
-   - **Parameters Changed**:
-     - cohesion_factor: [Value]
-     - separation_distance: [Value]
-   - **Description**:
-     - Discuss the observed changes in the model.
-
-3. **Variation 3: [Name/Description]**
-
-   ![Variation 3](images/variation3.jpg)
-
-   - **Parameters Changed**:
-     - randomness: [Value]
-     - environmental_influence: [Value]
-   - **Description**:
-     - Explain how the introduction of randomness or environmental factors impacted the results.
-
-*(Add more variations as needed.)*
+- **OOP Principles**:
+  - **Encapsulation**:
+    - The `Environment` and `Agent` classes contain their specific attributes and methods, separating responsibilities.
+  - **Polymorphism**:
+    - Agents exhibit different behaviors (wandering, group-seeking, path-following) based on flags.
+  - **Reusability**:
+    - The modular design allows new agent types or behaviors to be added without altering the existing structure.
 
 ---
 
-## Challenges and Solutions
+### **Agent Behaviors and Interactions**
 
-*(Discuss any challenges you faced during the assignment and how you overcame them.)*
+1. **Obstacle Avoidance**:
+   - Agents predict their next position and adjust velocity if an obstacle is detected in the path.
+   - A steering function ensures smooth navigation around obstacles.
 
-### Examples:
+2. **Goal-Seeking**:
+   - Agents calculate the direction and distance to their goal.
+   - Velocity is adjusted to move toward the goal with a weighted force.
 
-- **Challenge 1**: Managing large numbers of agents efficiently.
-  - **Solution**: Implemented spatial partitioning to reduce computation time.
+3. **Group-Seeking**:
+   - Agents compute the center of nearby agents and adjust velocity to align with the group's position.
 
-- **Challenge 2**: Agents getting stuck or clustering unnaturally.
-  - **Solution**: Adjusted interaction rules and added collision avoidance behaviors.
-
-- **Challenge 3**: Visualizing the simulation in real-time.
-  - **Solution**: Used efficient data structures and optimized rendering techniques.
+4. **Random Wandering**:
+   - Wanderer agents move in random directions within the environment.
 
 ---
 
-## References
+### **Simulation Loop**
 
-*(List any resources you used or found helpful during the assignment.)*
+- The simulation runs for a fixed number of steps.
+- Each step updates all agents based on their behaviors and visualizes the environment's state.
+- New agents are spawned periodically to simulate dynamic entry into the environment.
 
-- **Object-Oriented Programming**
+---
 
+## **Design Variations**
+
+### **Variation 1**
+
+#### **Parameters Changed**:
+- **num_agents**: 50 (Total number of agents in the simulation)
+- **num_wanderers**: 20 (Number of agents with random wandering behavior)
+- **num_obstacles**: 15
+- **goals**: 5
+- **spawn_points**: 3
+- **personal_space**: 1.5
+
+#### **Visualization**:
+![Agent Simulation 1](images/simulation1.gif)
+
+---
+
+### **Variation 2**
+
+#### **Parameters Changed**:
+- **num_agents**: 50 (Total number of agents in the simulation)
+- **num_wanderers**: 20 (Number of agents with random wandering behavior)
+- **num_obstacles**: 30
+- **goals**: 5
+- **spawn_points**: 6
+- **personal_space**: 1.5
+
+#### **Visualization**:
+![Agent Simulation 2](images/simulation2.gif)
+
+---
+
+### **Variation 3**
+
+#### **Parameters Changed**:
+- **num_agents**: 75 (Total number of agents in the simulation)
+- **num_wanderers**: 20 (Number of agents with random wandering behavior)
+- **num_obstacles**: 30
+- **goals**: 10
+- **spawn_points**: 4
+- **personal_space**: 1.5
+
+#### **Visualization**:
+![Agent Simulation 3](images/simulation3.gif)
+
+---
+
+## **Challenges and Solutions**
+
+1. **Challenge**: Efficiently managing large numbers of agents.
+   - **Solution**: Used a simple neighbor-detection approach with a distance threshold to reduce computation for interactions.
+
+2. **Challenge**: Agents getting stuck in obstacles.
+   - **Solution**: Improved obstacle avoidance with predictive steering and repulsion forces.
+
+3. **Challenge**: Visualizing dynamic behaviors in real time.
+   - **Solution**: Optimized Matplotlib rendering and paused briefly between steps for smooth animations.
+
+4. **Challenge**: Issues with Grasshopper input. Ensuring that Grasshopper inputs were in the correct format for the simulation (e.g., coordinates, parameters).
+   - **Solution**: After encountering difficulties with input compatibility, decided not to use Grasshopper and proceeded with a standalone Python implementation.
+
+5. **Challenge**: Balancing goal-seeking and obstacle avoidance forces.The force driving agents toward their goals was stronger than the repulsion force from obstacles, leading to unrealistic behavior near obstacles.
+   - **Solution**: Adjusted the weights of these forces but acknowledged that some issues still remain, particularly near sharp obstacle boundaries.
+
+6. **Challenge**: Deciding which behaviors to implement for realistic simulations of people in public spaces. Determining which behaviors were essential to capture realistic interactions (e.g., avoiding collisions, group dynamics, goal-seeking).
+   - **Solution**: Focused on a subset of behaviors deemed most important (e.g., group-seeking, goal-seeking, obstacle avoidance), leaving room for further expansion in future iterations.
+
+---
+
+## **References**
+
+- **Object-Oriented Programming**:
   - [Python Official Documentation](https://docs.python.org/3/tutorial/classes.html)
   - [Real Python - OOP in Python](https://realpython.com/python3-object-oriented-programming/)
 
-- **Agent-Based Modeling**
-
+- **Agent-Based Modeling**:
   - [Mesa: Agent-Based Modeling in Python](https://mesa.readthedocs.io/en/master/)
-  - [Agent-Based Models in Architecture](https://www.researchgate.net/publication/279218265_Agent-based_models_in_architecture_new_possibilities_of_interscalar_design)
 
-- **Visualization Tools**
-
+- **Visualization Tools**:
   - [Rhino.Python Guides](https://developer.rhino3d.com/guides/rhinopython/)
+  - [Grasshopper Official Documentation](https://www.grasshopper3d.com/page/getting-started-with-grasshopper)
   - [matplotlib](https://matplotlib.org/)
-  - [Blender Python API](https://docs.blender.org/api/current/)
-
----
-
-*(Feel free to expand upon these sections to fully capture your work and learning process.)*
-
----
