@@ -214,6 +214,13 @@ def run_simulation(environment, agents, spawn_points, steps=100, save_dir="simul
         # Add the legend after all visual elements are drawn
         plt.legend(handles=[obstacles_patch, agents_patch, wanderers_patch, goals_patch, spawn_patch], loc='center left', bbox_to_anchor=(1.05, 0.5))
 
+        plt.xticks([])
+        plt.yticks([])
+
+        # Save the frame as an image
+        frame_filename = os.path.join(save_dir, f"frame_{step:03d}.png")
+        plt.savefig(frame_filename, bbox_inches='tight')
+
         plt.pause(0.1)
 
     plt.show()
@@ -233,4 +240,4 @@ if __name__ == "__main__":
                                         env_width=env_width, env_height=env_height, obstacles=obstacles, spawn_points=spawn_points)
 
     # Run the simulation
-    run_simulation(env, agents, spawn_points)
+    run_simulation(env, agents, spawn_points, steps=100, save_dir="C:\\Users\\Louis\\OneDrive\\7th semester\\Advanced Computational Design\\assignment-4-agent-based-modeling-LouiseHM21\\simulation_images1")
