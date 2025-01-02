@@ -4,7 +4,7 @@
 
 - [Pseudo-Code](#pseudo-code)
 - [Technical Explanation](#technical-explanation)
-- [Design](#design)
+- [Design Variations](#design-variations)
 - [Challenges and Solutions](#challenges-and-solutions)
 - [References](#references)
 
@@ -113,28 +113,50 @@
 
 ---
 
-## **Design**
+## **Design Variations**
 
-### **Group-Seeking and Obstacle Avoidance**
+### **Variation 1**
 
 #### **Parameters Changed**:
-- **interaction_radius**: 15 units
-- **personal_space**: 1.5 units
-- **goal_weight**: 0.5
 - **num_agents**: 50 (Total number of agents in the simulation)
 - **num_wanderers**: 20 (Number of agents with random wandering behavior)
-- **num_group_seekers**: 25 (Number of agents exhibiting group-seeking behavior)
-- **num_path_followers**: 25 (Number of agents following specific paths or goals)
-
-#### **Description**:
-In this variation, group-seeking agents dominate the simulation. Agents prioritize moving toward the center of their local group while avoiding obstacles. The reduced goal weight allows agents to adapt their paths dynamically rather than heading directly to their goal.
-
-#### **Impact**:
-- Agents form clusters and maintain cohesion even when navigating around obstacles.
-- Obstacles create interesting movement patterns as groups split and re-merge.
+- **num_obstacles**: 15
+- **goals**: 5
+- **spawn_points**: 3
+- **personal_space**: 1.5
 
 #### **Visualization**:
-![Agent Simulation](images/simulation.gif)
+![Agent Simulation 1](images/simulation1.gif)
+
+---
+
+### **Variation 2**
+
+#### **Parameters Changed**:
+- **num_agents**: 50 (Total number of agents in the simulation)
+- **num_wanderers**: 20 (Number of agents with random wandering behavior)
+- **num_obstacles**: 30
+- **goals**: 5
+- **spawn_points**: 6
+- **personal_space**: 1.5
+
+#### **Visualization**:
+![Agent Simulation 2](images/simulation2.gif)
+
+---
+
+### **Variation 3**
+
+#### **Parameters Changed**:
+- **num_agents**: 75 (Total number of agents in the simulation)
+- **num_wanderers**: 20 (Number of agents with random wandering behavior)
+- **num_obstacles**: 30
+- **goals**: 10
+- **spawn_points**: 4
+- **personal_space**: 1.5
+
+#### **Visualization**:
+![Agent Simulation 3](images/simulation3.gif)
 
 ---
 

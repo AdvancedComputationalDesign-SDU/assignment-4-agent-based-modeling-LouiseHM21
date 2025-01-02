@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import random
 import os
 
-# Set a seed for reproducibility
+# Set a seed for reproducibility to ensure consistent simulation results
 random.seed(5)  # Seed for Python's random module
 np.random.seed(5)  # Seed for NumPy's random module
 
@@ -13,21 +13,21 @@ class Environment:
     Represents the simulation environment, including boundaries, obstacles, and goals.
     """
     def __init__(self, width, height, obstacles, goals):
-        self.width = width
-        self.height = height
-        self.obstacles = obstacles  # List of obstacles represented as rectangles [(x1, y1, x2, y2)]
-        self.goals = goals  # List of goal positions [(x, y)]
+        self.width = width  # Width of the environment
+        self.height = height  # Height of the environment
+        self.obstacles = obstacles  # List of rectangular obstacles represented as [(x1, y1, x2, y2)]
+        self.goals = goals  # List of goal positions represented as [(x, y)]
 
     def is_within_bounds(self, position):
         """
-        Check if a position is within the environment boundaries.
+        Check if a given position is within the boundaries of the environment.
         """
         x, y = position
         return 0 <= x < self.width and 0 <= y < self.height
 
     def is_obstacle(self, position):
         """
-        Check if a position is inside any obstacle.
+        Check if a given position lies inside any obstacle.
         """
         for obstacle in self.obstacles:
             x1, y1, x2, y2 = obstacle
@@ -37,7 +37,7 @@ class Environment:
 
     def is_valid_position(self, position):
         """
-        Check if a position is valid (inside boundaries and not inside obstacles).
+        Check if a position is valid (within boundaries and not inside obstacles).
         """
         return self.is_within_bounds(position) and not self.is_obstacle(position)
 
@@ -48,63 +48,65 @@ class Agent:
     """
     def __init__(self, position, goal, speed=0.5, personal_space=1.5, wanderer=False):
         self.position = np.array(position, dtype=float)  # Current position of the agent
-        self.path = [np.array(position, dtype=float)]  # Path to visualize movement
-        self.goal = goal  # Goal assigned to the agent
-        self.speed = speed  # Maximum movement speed
-        self.personal_space = personal_space  # Distance to maintain from other agents
-        self.velocity = np.array([0.0, 0.0])  # Current velocity
-        self.wanderer = wanderer  # Flag for wanderer behavior (random movement)
+        self.path = [np.array(position, dtype=float)]  # Stores the path taken by the agent
+        self.goal = goal  # Goal position assigned to the agent
+        self.speed = speed  # Maximum movement speed of the agent
+        self.personal_space = personal_space  # Minimum distance to maintain from other agents
+        self.velocity = np.array([0.0, 0.0])  # Initial velocity of the agent
+        self.wanderer = wanderer  # Determines if the agent moves randomly
 
     def compute_velocity(self, neighbors, environment):
         """
-        Compute the agent's velocity based on its goal and nearby obstacles.
+        Compute the agent's velocity based on its goal and nearby obstacles or agents.
         """
         self.velocity = np.array([0.0, 0.0])  # Reset velocity
 
         if self.wanderer:
-            # Random movement for wanderer agents
+            # If the agent is a wanderer, assign random velocity.
             self.velocity = np.random.uniform(-1, 1, size=2)
             self.velocity = self.velocity / np.linalg.norm(self.velocity) * self.speed
             return
 
         if self.goal is not None:
-            # Goal-seeking behavior
+            # Calculate direction to the goal.
             direction_to_goal = self.goal - self.position
             if np.linalg.norm(direction_to_goal) > 0:
-                direction_to_goal /= np.linalg.norm(direction_to_goal)  # Normalize
-            self.velocity += direction_to_goal * 0.5  # Weight for goal-seeking
+                direction_to_goal /= np.linalg.norm(direction_to_goal)  # Normalize the vector
+            self.velocity += direction_to_goal * 0.5  # Weighted contribution towards goal
 
-        # Normalize and limit to the agent's speed
+        # Normalize velocity to maintain maximum allowed speed
         if np.linalg.norm(self.velocity) > 0:
             self.velocity = self.velocity / np.linalg.norm(self.velocity) * self.speed
 
     def move(self, environment):
         """
-        Update the agent's position based on its velocity, ensuring it stays in valid areas.
-        If stuck, assign a new random goal.
+        Update the agent's position based on its velocity, ensuring valid movement.
+        Assign a new random goal if the agent encounters an invalid position.
         """
         new_position = self.position + self.velocity
         if environment.is_valid_position(new_position):
             self.position = new_position
-            self.path.append(self.position.copy())  # Update the path with the new position
+            self.path.append(self.position.copy())  # Record the new position in the agent's path
         else:
-            # If the movement leads to an invalid position, assign a new goal
+            # If the position is invalid, reassign a random valid goal within the environment
             self.goal = np.array([random.uniform(1, environment.width - 1), random.uniform(1, environment.height - 1)])
             while not environment.is_valid_position(self.goal):
                 self.goal = np.array([random.uniform(1, environment.width - 1), random.uniform(1, environment.height - 1)])
 
 # Utility functions
+
 def create_obstacles(width, height, num_obstacles=15):
     """
-    Generate a list of non-overlapping rectangular obstacles.
+    Generate a list of non-overlapping rectangular obstacles within the environment.
     """
     obstacles = []
     while len(obstacles) < num_obstacles:
         x1 = random.uniform(0, width - 2)
         y1 = random.uniform(0, height - 2)
-        x2 = x1 + random.uniform(0.5, 2)  # Random width
-        y2 = y1 + random.uniform(0.5, 2)  # Random height
+        x2 = x1 + random.uniform(0.5, 2)  # Random width of the obstacle
+        y2 = y1 + random.uniform(0.5, 2)  # Random height of the obstacle
 
+        # Check for overlap with existing obstacles
         overlap = any(not (x2 <= obs[0] or x1 >= obs[2] or y2 <= obs[1] or y1 >= obs[3]) for obs in obstacles)
         if not overlap:
             obstacles.append((x1, y1, x2, y2))
@@ -112,10 +114,10 @@ def create_obstacles(width, height, num_obstacles=15):
 
 def create_goals(environment):
     """
-    Generate valid goal positions in the environment (not inside obstacles).
+    Generate a list of valid goal positions within the environment, avoiding obstacles.
     """
     goals = []
-    for _ in range(5):  # Generate 5 goals
+    for _ in range(10):  # Generate 10 goals
         valid_goal = False
         while not valid_goal:
             goal = np.array([random.uniform(1, environment.width - 1), random.uniform(1, environment.height - 1)])
@@ -133,12 +135,13 @@ def initialize_simulation(num_agents, num_wanderers, env_width, env_height, obst
         obstacles=obstacles,
         goals=[]
     )
-    goals = create_goals(environment)
+    goals = create_goals(environment)  # Create goals within the environment
     environment.goals = goals
 
     agents = []
     goal_index = 0
     for _ in range(num_agents):
+        # Randomly assign starting positions for agents
         start_pos = (random.uniform(0, env_width), random.uniform(0, env_height))
         while not environment.is_valid_position(start_pos):
             start_pos = (random.uniform(0, env_width), random.uniform(0, env_height))
@@ -146,6 +149,7 @@ def initialize_simulation(num_agents, num_wanderers, env_width, env_height, obst
         goal_index = (goal_index + 1) % len(goals)
 
     for _ in range(num_wanderers):
+        # Randomly assign starting positions for wanderer agents
         start_pos = (random.uniform(0, env_width), random.uniform(0, env_height))
         while not environment.is_valid_position(start_pos):
             start_pos = (random.uniform(0, env_width), random.uniform(0, env_height))
@@ -153,41 +157,37 @@ def initialize_simulation(num_agents, num_wanderers, env_width, env_height, obst
 
     return environment, agents
 
-def run_simulation(environment, agents, spawn_points, steps=100, save_dir="simulation_images"):
+def run_simulation(environment, agents, spawn_points, steps=50, save_dir="simulation_images"):
     """
     Run the simulation for a specified number of steps, visualizing the results.
-    Saves images at each step if a save directory is specified.
+    Optionally saves images of each step to the specified directory.
     """
     if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
+        os.makedirs(save_dir)  # Create directory to save simulation images if it doesn't exist
 
-    plt.figure(figsize=(15, 8))  # Increased figure size to accommodate the legend
-
-    # Legend handles for obstacles, agents, goals, and spawn points
-    obstacles_patch = plt.Line2D([0], [0], marker='s', color='w', markerfacecolor='black', markersize=10, label='Obstacle')
-    agents_patch = plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=10, label='Agent')
-    wanderers_patch = plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=6, label='Wanderer')  # Smaller size for wanderers
-    goals_patch = plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='red', markersize=10, label='Goal')
-    spawn_patch = plt.Line2D([0], [0], marker='D', color='w', markerfacecolor='purple', markersize=10, label='Spawn Point')
+    plt.figure(figsize=(15, 8))  # Create a figure for visualization
 
     for step in range(steps):
-        plt.clf()
-        plt.subplots_adjust(right=0.8)  # Adjust right margin to make space for the legend
-        plt.xlim(0, environment.width)
-        plt.ylim(0, environment.height)
+        plt.clf()  # Clear the figure for the next frame
+        plt.xlim(0, environment.width)  # Set x-axis limits
+        plt.ylim(0, environment.height)  # Set y-axis limits
 
         for obstacle in environment.obstacles:
+            # Draw each obstacle as a rectangle
             x_vals = [obstacle[0], obstacle[2], obstacle[2], obstacle[0], obstacle[0]]
             y_vals = [obstacle[1], obstacle[1], obstacle[3], obstacle[3], obstacle[1]]
             plt.plot(x_vals, y_vals, color='black', lw=2)
 
         for goal in environment.goals:
+            # Plot each goal as a red circle
             plt.scatter(goal[0], goal[1], color='red', s=100, marker='o')
 
         for spawn in spawn_points:
-            plt.scatter(spawn[0], spawn[1], color='purple', s=100, marker='D')  # Visualize spawn points
+            # Plot each spawn point as a purple diamond
+            plt.scatter(spawn[0], spawn[1], color='purple', s=100, marker='D')
 
         for agent in agents:
+            # Compute and update agent's movement
             neighbors = [a for a in agents if a != agent and np.linalg.norm(a.position - agent.position) < agent.personal_space]
             agent.compute_velocity(neighbors, environment)
             agent.move(environment)
@@ -218,8 +218,8 @@ def run_simulation(environment, agents, spawn_points, steps=100, save_dir="simul
         plt.yticks([])
 
         # Save the frame as an image
-        frame_filename = os.path.join(save_dir, f"frame_{step:03d}.png")
-        plt.savefig(frame_filename, bbox_inches='tight')
+        # frame_filename = os.path.join(save_dir, f"frame_{step:03d}.png")
+        # plt.savefig(frame_filename, bbox_inches='tight')
 
         plt.pause(0.1)
 
@@ -230,14 +230,15 @@ if __name__ == "__main__":
     env_width, env_height = 20, 20
 
     # Define or generate obstacles
-    obstacles = create_obstacles(env_width, env_height, num_obstacles=15)
+    obstacles = create_obstacles(env_width, env_height, num_obstacles=30)
 
     # Define spawn points
-    spawn_points = [(2, 2), (18, 18), (15, 3)]
+    spawn_points = [(2, 2), (18, 18), (15, 3), (10, 1)]
 
     # Create the environment and initialize agents
-    env, agents = initialize_simulation(num_agents=50, num_wanderers=20,
+    env, agents = initialize_simulation(num_agents=75, num_wanderers=20,
                                         env_width=env_width, env_height=env_height, obstacles=obstacles, spawn_points=spawn_points)
 
     # Run the simulation
-    run_simulation(env, agents, spawn_points, steps=100, save_dir="C:\\Users\\Louis\\OneDrive\\7th semester\\Advanced Computational Design\\assignment-4-agent-based-modeling-LouiseHM21\\simulation_images1")
+    # run_simulation(env, agents, spawn_points, steps=50, save_dir="C:\\Users\\Louis\\OneDrive\\7th semester\\Advanced Computational Design\\assignment-4-agent-based-modeling-LouiseHM21\\simulation_images3")
+    run_simulation(env, agents, spawn_points)
