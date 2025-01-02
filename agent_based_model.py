@@ -35,123 +35,63 @@ class Environment:
                 return True
         return False
 
-    def is_goal_valid(self, goal_position):
+    def is_valid_position(self, position):
         """
-        Ensure that a goal position is not inside any obstacle.
+        Check if a position is valid (inside boundaries and not inside obstacles).
         """
-        return not self.is_obstacle(goal_position)
+        return self.is_within_bounds(position) and not self.is_obstacle(position)
 
 # Define the agent
 class Agent:
     """
-    Represents an agent with behaviors such as goal-seeking, obstacle avoidance, 
-    and optional wanderer or group-seeking dynamics.
+    Represents an agent with behaviors such as goal-seeking and obstacle avoidance.
     """
-    def __init__(self, position, goal, speed=0.5, personal_space=1.5, wanderer=False, group_seeker=False, path_follower=False):
+    def __init__(self, position, goal, speed=0.5, personal_space=1.5, wanderer=False):
         self.position = np.array(position, dtype=float)  # Current position of the agent
+        self.path = [np.array(position, dtype=float)]  # Path to visualize movement
         self.goal = goal  # Goal assigned to the agent
         self.speed = speed  # Maximum movement speed
         self.personal_space = personal_space  # Distance to maintain from other agents
         self.velocity = np.array([0.0, 0.0])  # Current velocity
         self.wanderer = wanderer  # Flag for wanderer behavior (random movement)
-        self.group_seeker = group_seeker  # Flag for group-seeking behavior
-        self.path_follower = path_follower  # Flag for path-following behavior
 
     def compute_velocity(self, neighbors, environment):
         """
-        Compute the agent's velocity based on its goal, nearby obstacles, and neighbors.
+        Compute the agent's velocity based on its goal and nearby obstacles.
         """
-        # Step 1: Avoid obstacles (stronger priority)
-        self.avoid_obstacles(environment)
+        self.velocity = np.array([0.0, 0.0])  # Reset velocity
 
         if self.wanderer:
-            # Random movement for agents marked as wanderers
+            # Random movement for wanderer agents
             self.velocity = np.random.uniform(-1, 1, size=2)
             self.velocity = self.velocity / np.linalg.norm(self.velocity) * self.speed
             return
 
-        if self.group_seeker:
-            # Move towards the center of nearby group members
-            group_center = np.array([0.0, 0.0])
-            num_neighbors = 0
-            for neighbor in neighbors:
-                if np.linalg.norm(self.position - neighbor.position) < 15:  # Extended radius for group-seeking behavior
-                    group_center += neighbor.position
-                    num_neighbors += 1
-
-            if num_neighbors > 0:
-                group_center /= num_neighbors
-                direction_to_group = group_center - self.position
-                distance_to_group = np.linalg.norm(direction_to_group)
-
-                if distance_to_group > 0:
-                    direction_to_group /= distance_to_group  # Normalize direction vector
-                    self.velocity += direction_to_group * 1.0  # Increased attraction to group center
-
         if self.goal is not None:
             # Goal-seeking behavior
             direction_to_goal = self.goal - self.position
-            distance_to_goal = np.linalg.norm(direction_to_goal)
+            if np.linalg.norm(direction_to_goal) > 0:
+                direction_to_goal /= np.linalg.norm(direction_to_goal)  # Normalize
+            self.velocity += direction_to_goal * 0.5  # Weight for goal-seeking
 
-            if distance_to_goal > 0:
-                direction_to_goal /= distance_to_goal  # Normalize direction vector
-            else:
-                direction_to_goal = np.array([0.0, 0.0])  # No movement if already at goal
-
-            self.velocity += direction_to_goal * 0.5  # Apply goal-seeking force with reduced weight
-
-        # Normalize velocity to match the agent's speed
+        # Normalize and limit to the agent's speed
         if np.linalg.norm(self.velocity) > 0:
             self.velocity = self.velocity / np.linalg.norm(self.velocity) * self.speed
 
-    def avoid_obstacles(self, environment):
+    def move(self, environment):
         """
-        Detect obstacles in the agent's path and apply a repulsion force to steer away.
+        Update the agent's position based on its velocity, ensuring it stays in valid areas.
+        If stuck, assign a new random goal.
         """
-        # Predict the next step based on current velocity
-        step_ahead = self.position + self.velocity * 1.0
-
-        for obstacle in environment.obstacles:
-            x1, y1, x2, y2 = obstacle
-            if x1 <= step_ahead[0] <= x2 and y1 <= step_ahead[1] <= y2:
-                # Adjust velocity to avoid obstacle
-                self.steer_around_obstacle(obstacle)
-                break
-
-    def steer_around_obstacle(self, obstacle):
-        """
-        Adjust velocity to smoothly navigate around an obstacle.
-        """
-        # Calculate the center of the obstacle
-        x1, y1, x2, y2 = obstacle
-        obstacle_center = np.array([(x1 + x2) / 2, (y1 + y2) / 2])
-
-        # Steer away from the obstacle center
-        avoidance_direction = self.position - obstacle_center
-        avoidance_direction /= np.linalg.norm(avoidance_direction)  # Normalize direction
-
-        # Rotate the velocity slightly for smoother avoidance
-        angle_change = np.pi / 4  # Rotate 45 degrees
-        rotation_matrix = np.array([[np.cos(angle_change), -np.sin(angle_change)],
-                                    [np.sin(angle_change), np.cos(angle_change)]])
-        self.velocity = np.dot(rotation_matrix, self.velocity)
-
-    def move(self):
-        """
-        Update the agent's position based on its velocity.
-        """
-        self.position += self.velocity
-
-    def reached_goal(self):
-        """
-        Check if the agent has reached its assigned goal.
-        """
-        if self.goal is not None:
-            distance_to_goal = np.linalg.norm(self.position - self.goal)
-            if distance_to_goal < 0.5:
-                self.goal = None  # Goal reached
-        return self.goal is None
-
+        new_position = self.position + self.velocity
+        if environment.is_valid_position(new_position):
+            self.position = new_position
+            self.path.append(self.position.copy())  # Update the path with the new position
+        else:
+            # If the movement leads to an invalid position, assign a new goal
+            self.goal = np.array([random.uniform(1, environment.width - 1), random.uniform(1, environment.height - 1)])
+            while not environment.is_valid_position(self.goal):
+                self.goal = np.array([random.uniform(1, environment.width - 1), random.uniform(1, environment.height - 1)])
 
 # Utility functions
 def create_obstacles(width, height, num_obstacles=15):
@@ -179,19 +119,18 @@ def create_goals(environment):
         valid_goal = False
         while not valid_goal:
             goal = np.array([random.uniform(1, environment.width - 1), random.uniform(1, environment.height - 1)])
-            valid_goal = environment.is_goal_valid(goal)
+            valid_goal = environment.is_valid_position(goal)
         goals.append(goal)
     return goals
 
-
-def initialize_simulation(num_agents, num_wanderers, num_group_seekers, num_path_followers, env_width, env_height):
+def initialize_simulation(num_agents, num_wanderers, env_width, env_height, obstacles, spawn_points):
     """
     Initialize the environment and agents for the simulation.
     """
     environment = Environment(
         width=env_width,
         height=env_height,
-        obstacles=create_obstacles(env_width, env_height),
+        obstacles=obstacles,
         goals=[]
     )
     goals = create_goals(environment)
@@ -201,44 +140,28 @@ def initialize_simulation(num_agents, num_wanderers, num_group_seekers, num_path
     goal_index = 0
     for _ in range(num_agents):
         start_pos = (random.uniform(0, env_width), random.uniform(0, env_height))
+        while not environment.is_valid_position(start_pos):
+            start_pos = (random.uniform(0, env_width), random.uniform(0, env_height))
         agents.append(Agent(start_pos, goals[goal_index]))
         goal_index = (goal_index + 1) % len(goals)
 
     for _ in range(num_wanderers):
         start_pos = (random.uniform(0, env_width), random.uniform(0, env_height))
+        while not environment.is_valid_position(start_pos):
+            start_pos = (random.uniform(0, env_width), random.uniform(0, env_height))
         agents.append(Agent(start_pos, None, wanderer=True))
 
-    for _ in range(num_group_seekers):
-        start_pos = (random.uniform(0, env_width), random.uniform(0, env_height))
-        agents.append(Agent(start_pos, None, group_seeker=True))
-
-    for _ in range(num_path_followers):
-        start_pos = (random.uniform(0, env_width), random.uniform(0, env_height))
-        agents.append(Agent(start_pos, None, path_follower=True))
-
     return environment, agents
-
-
-def add_new_agents(spawn_points, agents, num_new_agents, env_width, env_height):
-    """
-    Add new agents to the simulation at specified spawn points.
-    """
-    for _ in range(num_new_agents):
-        spawn_point = random.choice(spawn_points)
-        goal = np.array([random.uniform(0, env_width), random.uniform(0, env_height)])
-        agents.append(Agent(spawn_point, goal))
-
 
 def run_simulation(environment, agents, spawn_points, steps=100, save_dir="simulation_images"):
     """
     Run the simulation for a specified number of steps, visualizing the results.
     Saves images at each step if a save directory is specified.
     """
-    # Create the directory to save images if it doesn't exist
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    plt.figure(figsize=(10, 8))  # Increased figure size for better visualization
+    plt.figure(figsize=(15, 8))  # Increased figure size to accommodate the legend
 
     # Legend handles for obstacles, agents, goals, and spawn points
     obstacles_patch = plt.Line2D([0], [0], marker='s', color='w', markerfacecolor='black', markersize=10, label='Obstacle')
@@ -248,66 +171,66 @@ def run_simulation(environment, agents, spawn_points, steps=100, save_dir="simul
     spawn_patch = plt.Line2D([0], [0], marker='D', color='w', markerfacecolor='purple', markersize=10, label='Spawn Point')
 
     for step in range(steps):
-        plt.clf()  # Clear the figure for the next step
-
-        # Draw environment boundaries
+        plt.clf()
+        plt.subplots_adjust(right=0.8)  # Adjust right margin to make space for the legend
         plt.xlim(0, environment.width)
         plt.ylim(0, environment.height)
 
-        # Draw obstacles as outlined rectangles
         for obstacle in environment.obstacles:
             x_vals = [obstacle[0], obstacle[2], obstacle[2], obstacle[0], obstacle[0]]
             y_vals = [obstacle[1], obstacle[1], obstacle[3], obstacle[3], obstacle[1]]
-            plt.plot(x_vals, y_vals, color='black', lw=2)  # Outline of the obstacle
+            plt.plot(x_vals, y_vals, color='black', lw=2)
 
-        # Draw goals as red circles
         for goal in environment.goals:
-            plt.scatter(goal[0], goal[1], color='red', s=100, marker='o')  # Fixed goals in red
+            plt.scatter(goal[0], goal[1], color='red', s=100, marker='o')
 
-        # Draw spawn points with purple diamonds
         for spawn in spawn_points:
-            plt.scatter(spawn[0], spawn[1], color='purple', s=100, marker='D')  # Diamond marker for spawn points
+            plt.scatter(spawn[0], spawn[1], color='purple', s=100, marker='D')  # Visualize spawn points
 
-        # Add new agents at spawn points every 10 steps
-        if step % 10 == 0:
-            add_new_agents(spawn_points, agents, num_new_agents=3, env_width=environment.width, env_height=environment.height)
-
-        # Update and draw agents
         for agent in agents:
-            # Find neighbors within personal space
             neighbors = [a for a in agents if a != agent and np.linalg.norm(a.position - agent.position) < agent.personal_space]
-            agent.compute_velocity(neighbors, environment)  # Update agent velocity based on neighbors and environment
-            agent.move()  # Move the agent to its new position
+            agent.compute_velocity(neighbors, environment)
+            agent.move(environment)
 
-            # Visualize agents with different styles for wanderers
-            if agent.wanderer:
-                plt.scatter(agent.position[0], agent.position[1], color='blue', s=20)  # Smaller size for wanderers
-            else:
-                plt.scatter(agent.position[0], agent.position[1], color='blue', s=50)  # Larger size for regular agents
-            if agent.goal is not None:
-                plt.scatter(agent.goal[0], agent.goal[1], color='red', s=50, alpha=0.5)  # Current goal (semi-transparent red)
+            # Draw the complete movement trail
+            path = np.array(agent.path)
+            plt.plot(path[:, 0], path[:, 1], color='gray', linestyle='--', linewidth=0.5)
 
-            # Check if the agent has reached its goal
-            if agent.reached_goal():
-                agent.goal = None  # Keep the goal fixed, no removal of goal
+            # Different sizes for wanderers
+            size = 20 if agent.wanderer else 50
+            plt.scatter(agent.position[0], agent.position[1], color='blue', s=size)
+
+        # Randomly spawn new agents
+        if step % 10 == 0:  # Spawn new agents every 10 steps
+            for _ in range(3):
+                spawn_point = random.choice(spawn_points)
+                while not environment.is_valid_position(spawn_point):
+                    spawn_point = random.choice(spawn_points)
+                new_goal = np.array([random.uniform(1, environment.width - 1), random.uniform(1, environment.height - 1)])
+                while not environment.is_valid_position(new_goal):
+                    new_goal = np.array([random.uniform(1, environment.width - 1), random.uniform(1, environment.height - 1)])
+                agents.append(Agent(spawn_point, new_goal))
 
         # Add the legend after all visual elements are drawn
-        plt.legend(handles=[obstacles_patch, agents_patch, wanderers_patch, goals_patch, spawn_patch], loc='upper left', bbox_to_anchor=(1.05, 1))
+        plt.legend(handles=[obstacles_patch, agents_patch, wanderers_patch, goals_patch, spawn_patch], loc='center left', bbox_to_anchor=(1.05, 0.5))
 
-        # Adjust layout to make space for the legend
-        plt.subplots_adjust(right=0.8)  # Reduce the right margin to make space for the legend
-
-        # Save the current plot as an image
-        image_filename = os.path.join(save_dir, f"step_{step:03d}.png")
-        plt.savefig(image_filename, bbox_inches='tight')  # Save the image with a tight layout
-
-        plt.pause(0.1)  # Pause briefly to create an animation effect
+        plt.pause(0.1)
 
     plt.show()
 
 # Main execution
 if __name__ == "__main__":
     env_width, env_height = 20, 20
+
+    # Define or generate obstacles
+    obstacles = create_obstacles(env_width, env_height, num_obstacles=15)
+
+    # Define spawn points
     spawn_points = [(2, 2), (18, 18), (15, 3)]
-    env, agents = initialize_simulation(num_agents=50, num_wanderers=20, num_group_seekers=25, num_path_followers=25, env_width=env_width, env_height=env_height)
+
+    # Create the environment and initialize agents
+    env, agents = initialize_simulation(num_agents=50, num_wanderers=20,
+                                        env_width=env_width, env_height=env_height, obstacles=obstacles, spawn_points=spawn_points)
+
+    # Run the simulation
     run_simulation(env, agents, spawn_points)
